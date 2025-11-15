@@ -1,64 +1,131 @@
 import React, { useEffect, useState } from "react";
-//import { todoApi } from "../../services/todoApi";
-import { createUserTask } from "../../services/todoApi";
-
-const userName = "hugo_guillen";
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faTrash} from '@fortawesome/free-solid-svg-icons';
+import { useFormState } from "react-dom";
 
 const Home = () => {
+  const [tarea, setTarea] = useState("");
+  const[todo, setTodo] = useState([]);
+  const username = "hugo_guillen";
 
-	const [inputValue, setInputValue] = useState("");
-	const [todos, setTodos] = useState([]);
+  useEffect(() => {
 
+	fetch(`https://playground.4geeks.com/todo/users/${username}`,{
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json"
+		}
+  })
+  	.then(resp => {
+		console.log("Usuario creado correctamente", resp.ok);
+		console.log("Status: ", resp.status);
+		return resp.json();		
+	})
+	.catch(error => console.log("Error al crear usuario:", error));
 	
+	recuperarTodo()
+	}, []);
 
-	function agregarTarea() {
-		setTodos([...todos, inputValue])
-		setInputValue("")
+	const recuperarTodo = async() => {
+		return fetch(`https://playground.4geeks.com/todo/users/${username}`)
+		.then(resp =>{
+			console.log("Recuperar ToDo: ", resp.ok);
+			console.log("Status: ", resp.status)
+			return resp.json();
+		})
+		.then(data => {
+			console.log("Tarea recuperada: ", data.todos);
+			setTodo(data.todos);
+		})
+		.catch(error => console.log("Error al recuperar ToDo:", error));
+	};
+
+	const agregarTarea = async () => {
+		await fetch(`https://playgrounds.4geeks.com/todo/users/${username}`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				"label": tarea
+		})
+	})
+		.then(() => {
+			recuperarTodo();
+		}).then(resp => {
+			console.log("Tarea agregada correctamente", resp.ok);
+			console.log("Status: ", resp.status);
+			return resp.json();
+		})
+		.catch(console.log("Error al agregar tarea:"));
 	}
 	
-	function quitarTarea(index) {
-		todos.splice(index, 1)
-		setTodos([...todos])
+	const eliminarTarea = async (id) => {
+		await fetch(`https://playground.4geeks.com/todo/${username}/${id}`, {
+			method: "DELETE",
+		})
+		.then(resp => {
+			console.log(`Eliminar tarea ${todo_id}: `, resp.ok)
+			console.log("Status: ", resp.status);
+			return resp.json();
+		})
+		.catch(error => console.log(`Error al eliminar tarea ${id}`, error));
 
-		console.log("quiero quitar la tarea:" + (index))
+		await recuperarTodo();
+		};
+	const BorrarTodo = async () => {
+		for (const tarea of todo){
+			await eliminarTarea(tarea.id);
+		}
+		traerTodo();
+	};
 	
-	}
-
 	return (
-		<div className="container text-center mt-5">
-			<h1 className="dispaly-5 fw-ligth text-secondary opacity-75 mb-4">To-Do List</h1>
+        <div className="container">
+            <h1>todos</h1>
 
-			<div className="row justify-content-center mb3">
-				<div className="col-md-6 col-sm-10">
-					<div className="input-group shadow-sm mb-4">
-						<input
-							type="text"
-							className="form-control"
-							value={inputValue}
-							onChange={(event) => setInputValue(event.target.value)}
-							placeholder="Cosas pendientes"
-						/>
-					</div>
-						<button className="btn btn-primary px-4" type="button" onClick={async () => {
-							agregarTarea();
-							await createUserTask(inputValue);
-							}}>Agregar tarea</button>
-						
-				</div>
-			</div>
-			<ul className="list-group shadow w-50 mx-auto text-start mb-3 p-3">
-				{todos.map((todo, index) =>
-					<li className="list-group-item d-flex justify-content-between align-items-center" key={todo}>{todo}
-						<i
-							className="fa-solid fa-trash text-danger"
-							role="button"
-							onClick={() => quitarTarea(index)}
-						></i>
-					</li>)}
-			</ul>
-			<div className="text-muted mt-3 small mb-3">{todos.length} tareas pendientes</div>
-		</div>
-	);
+            <div className="caja">
+                <input
+                    onChange={(event) => setTarea(event.target.value)}
+                    onKeyDown={(event) => {
+						if (event.key === "Enter" && tarea.trim() !== "") {
+							setTodo([...todo, { label: tarea }]);
+                            setTarea("");
+                            agregarTarea()
+                        }
+                    }}
+                    
+                    value={tarea}
+					placeholder="Ingresa tu tarea"
+                />
+
+                <ul className="listas">
+                    {todo.length === 0 ? (
+                        <li>No hay tareas, añade una</li>
+                    ) : null}
+
+                    {todo.map((item,) => (
+                        <li key={item.id}>
+                            {item.label} {" "}
+
+                            <i onClick={async () => {
+                                await eliminarTarea(item.id);
+                                traerTodo();
+                            }}>
+                                <FontAwesomeIcon icon={faTrash} /> </i>
+                        </li>
+                    ))}
+                </ul>
+
+                <div className="contador">{todo.length} tarea menos</div>
+                <div className="botonContenedor">
+                    <button onClick={BorrarTodo} className="borrarTodo">
+                        Borrar todo
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default Home;
