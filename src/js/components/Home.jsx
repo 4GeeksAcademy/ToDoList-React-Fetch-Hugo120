@@ -100,11 +100,11 @@ const Home = () => {
                 />
 
                 <ul className="listas">
-                    {todo.length === 0 ? (
+                    {todo?.length === 0 ? (
                         <li>No hay tareas, añade una</li>
                     ) : null}
 
-                    {todo.map((item,) => (
+                    {todo?.map((item,) => (
                         <li key={item.id}>
                             {item.label} {" "}
 
